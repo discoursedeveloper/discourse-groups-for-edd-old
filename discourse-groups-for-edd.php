@@ -15,3 +15,9 @@ Author URI: https://github.com/discoursedeveloper/
 License: GPLv2 or later
 Text Domain: dis_groups_edd
 */
+
+if(is_admin()){
+	include_once 'admin/disco-edd-admin.php';
+}else{
+	include_once 'disco-edd.php';
+}
