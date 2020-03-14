@@ -31,7 +31,7 @@ class DiscoEdd {
 		add_action( 'edd_sl_post_license_renewal', array( $this, 'edd_post_license_renewal' ), 100, 2 );
 
 		// On new user registration add the user to groups in case of any previous guest purchase.
-		add_action( 'user_register', array( $this, 'add_past_license_keys_to_new_user' ), 100 );
+		add_action( 'user_register', array( $this, 'add_past_discourse_groups_to_new_user' ), 100 );
 
 		// Before deleting a subscription add/remove user from a group.
 		add_action( 'edd_recurring_before_delete_subscription', array( $this, 'edd_recurring_before_delete_subscription' ), 100 );
@@ -75,6 +75,30 @@ class DiscoEdd {
 		// Get user id(s) from license meta and add/remove user from the group, if it is a guest payment then do nothing.
 		// Get group id(s) from download meta and add/remove user from the group and to get download use license id.
 		$this->add_remove_user_using_license( $license_id );
+	}
+
+	public function add_past_discourse_groups_to_new_user( $user_id ) {
+		$email = get_the_author_meta( 'user_email', $user_id );
+		if ( empty( $email ) ) {
+			return;
+		}
+		$payments = edd_get_payments(
+			array(
+				's'      => $email,
+				'output' => 'payments',
+			)
+		);
+		if ( $payments ) {
+			foreach ( $payments as $payment ) {
+				if ( is_object( $payment ) && $payment instanceof EDD_Payment ) {
+					if ( $payment->downloads ) {
+						foreach ( $payment->downloads as $download ) {
+							$this->add_remove_user_using_download_payment( (int) $download['id'], $payment->id );
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public function edd_recurring_before_delete_subscription( $edd_subscription ) {
